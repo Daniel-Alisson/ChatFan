@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Unifan Chat</title>
+	<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+	<style>
+		body {
+			font-family: 'Roboto', sans-serif;
+			background-color: #121214;
+			color: #202024;
+			margin: 0;
+			padding: 0;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			height: 100vh;
+		}
+		#chat {
+			background-color: #ffffff;
+			border-radius: 8px;
+			padding: 20px;
+			width: 100%;
+			max-width: 600px;
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+		}
+		.logo {
+			display: block;
+			margin: 0 auto 15px auto;
+			max-width: 120px;
+			height: auto;
+		}
+		ul {
+			list-style-type: none;
+			padding: 0;
+			margin-bottom: 20px;
+			max-height: 300px;
+			overflow-y: auto;
+		}
+		ul li {
+			background-color: #f1f1f1;
+			color: #121214;
+			margin-bottom: 10px;
+			padding: 10px;
+			border-radius: 8px;
+		}
+		form {
+			display: flex;
+			gap: 10px;
+		}
+		input {
+			flex: 1;
+			padding: 10px;
+			border: 1px solid #ccc;
+			border-radius: 8px;
+			background-color: #fff;
+			color: #121214;
+			font-size: 16px;
+		}
+		button {
+			background-color: #29327D;
+			color: white;
+			border: none;
+			border-radius: 8px;
+			padding: 10px 20px;
+			cursor: pointer;
+			font-weight: bold;
+			transition: background-color 0.3s ease;
+		}
+		button:hover {
+			background-color: #1e2560;
+		}
+		h1 {
+			text-align: center;
+			color: #29327D;
+			margin-bottom: 20px;
+		}
+		ul::-webkit-scrollbar {
+			width: 8px;
+		}
+		ul::-webkit-scrollbar-track {
+			background: #ffffff;
+		}
+		ul::-webkit-scrollbar-thumb {
+			background-color: #29327D;
+			border-radius: 10px;
+		}
+	</style>
+	<script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+	<div id="chat">
+		<img src="https://unifan.net.br/tutorial-app/assets/imgs/unifan_logo.png" alt="Logo UNIFAN" class="logo">
+		<h1>Bem-vindo ao FanChat</h1>
+		<ul id="messages"></ul>
+		<form id="form" action="">
+			<input id="message" autocomplete="off" placeholder="Digite sua mensagem..." /> 
+			<button type="submit">Enviar</button>
+		</form>
+	</div>
+	<script>
+		const socket = io();
+		let username = '';
+		let nomeValido = false;
+
+		function solicitarNome() {
+			const nome = prompt('Digite seu nome:');
+
+			if (nome === null || nome.trim() === '') {
+				alert('Nome de usuário não pode ser vazio');
+				solicitarNome();
+			} else {
+				socket.emit('validar nome', nome.trim());
+			}
+		}
+
+		socket.on('connect', () => {
+			solicitarNome();
+		});
+
+		socket.on('nome valido', (nome) => {
+			username = nome;
+			nomeValido = true;
+			console.log(`Nome validado: ${nome}`);
+		});
+
+		socket.on('nome invalido', (mensagem) => {
+			alert(mensagem);
+			solicitarNome();
+		});
+
+		const form = document.getElementById('form');
+		const messageInput = document.getElementById('message');
+		const messages = document.getElementById('messages');
+
+		form.addEventListener('submit', function(e) {
+			e.preventDefault();
+			if (!nomeValido) {
+				alert('Aguardando nome de usuário válido...');
+				return;
+			}
+			if (messageInput.value) {
+				const messageData = {
+					username: username,
+					message: messageInput.value
+				};
+				socket.emit('chat message', messageData);
+				messageInput.value = '';
+			}
+		});
+
+		socket.on('chat message', function(data) {
+			const item = document.createElement('li');
+			item.innerHTML = `<strong>${data.username}</strong>: ${data.message}`;
+			messages.appendChild(item);
+			messages.scrollTop = messages.scrollHeight;
+		});
+	</script>
+</body>
+</html>
